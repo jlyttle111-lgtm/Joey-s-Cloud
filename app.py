@@ -434,6 +434,80 @@ APP_HTML = """
   .progRow{display:flex;justify-content:space-between;gap:10px;margin-top:8px;align-items:center}
   .mini{font-size:12px;color:var(--muted)}
   .pillMini{padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(13,20,36,.55);font-size:12px;color:var(--muted)}
+
+  /* Pie chart styles */
+  .pie-chart-container{
+    display:flex;justify-content:center;align-items:center;margin:14px 0;
+    min-height:200px;
+  }
+  .pie-chart-wrapper{
+    position:relative;width:200px;height:200px;
+  }
+  .pie-chart-svg{
+    transform:rotate(-90deg);width:100%;height:100%;
+  }
+  .pie-legend{
+    display:flex;flex-direction:column;gap:8px;margin-top:12px;
+  }
+  .pie-legend-item{
+    display:flex;align-items:center;gap:8px;font-size:12px;
+  }
+  .pie-legend-color{
+    width:14px;height:14px;border-radius:4px;flex-shrink:0;
+  }
+
+  /* File tree action buttons */
+  .node-actions{
+    display:flex;gap:6px;margin-left:auto;opacity:0;transition:opacity .15s ease;
+  }
+  .node:hover .node-actions{opacity:1}
+  .node-content{
+    display:flex;align-items:center;gap:8px;flex:1;
+  }
+  .node-wrapper{
+    display:flex;align-items:center;gap:8px;
+  }
+  .action-btn{
+    width:20px;height:20px;border-radius:6px;border:none;
+    background:rgba(255,255,255,.10);color:var(--text);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:12px;transition:all .12s ease;padding:0;
+  }
+  .action-btn:hover{background:rgba(122,167,255,.25);transform:scale(1.1)}
+  .action-btn.delete:hover{background:rgba(255,122,122,.35);color:#ff7a7a}
+  .action-btn.rename:hover{background:rgba(168,255,191,.25);color:var(--ok)}
+
+  /* Inline rename input */
+  .rename-input{
+    background:rgba(13,20,36,.85);border:1px solid rgba(122,167,255,.50);
+    padding:4px 8px;border-radius:6px;font-size:13px;width:auto;min-width:120px;
+    margin:0 4px;
+  }
+
+  /* Customization panel */
+  .color-picker-row{
+    display:flex;align-items:center;gap:10px;margin:10px 0;
+  }
+  .color-picker-label{
+    min-width:120px;font-size:13px;color:var(--muted);
+  }
+  .color-input{
+    width:60px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.20);
+    cursor:pointer;padding:0;
+  }
+  .gradient-preset{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;margin-top:10px;
+  }
+  .gradient-btn{
+    height:60px;border-radius:12px;border:2px solid rgba(255,255,255,.15);
+    cursor:pointer;transition:all .15s ease;position:relative;
+  }
+  .gradient-btn:hover{transform:translateY(-2px);border-color:rgba(122,167,255,.50);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .gradient-btn.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(122,167,255,.20)}
+  .gradient-name{
+    position:absolute;bottom:6px;left:8px;right:8px;font-size:11px;
+    background:rgba(0,0,0,.5);padding:3px 6px;border-radius:6px;text-align:center;
+  }
 </style>
 </head><body>
   <div class="topbar">
@@ -448,6 +522,7 @@ APP_HTML = """
     <div class="tabs">
       <div class="tab active" id="tabFiles" onclick="showTab('files')">Files</div>
       <div class="tab" id="tabStats" onclick="showTab('stats')">Stats</div>
+      <div class="tab" id="tabCustom" onclick="showTab('custom')">Customization</div>
     </div>
 
     <div id="panelFiles" class="panel grid two">
@@ -458,25 +533,30 @@ APP_HTML = """
       </div>
 
       <div class="card stack">
-        <h2>Actions</h2>
+        <h2>Storage Overview</h2>
+        <div class="muted">Quick view of your storage usage.</div>
+        <div class="pie-chart-container" style="min-height:160px;margin:10px 0">
+          <div class="pie-chart-wrapper" style="width:160px;height:160px" id="pieChartMini"></div>
+        </div>
+        <div class="pie-legend" id="pieLegendMini" style="font-size:11px"></div>
 
-        <div class="muted">Upload into folder (optional):</div>
-        <input id="uploadFolder" placeholder="e.g. projects/carrot_idle" style="margin-top:8px"/>
+        <h2 style="margin-top:20px">Upload Files</h2>
+        <div class="muted">Choose a destination folder (optional):</div>
+        <input id="uploadFolder" placeholder="e.g. projects/myapp" style="margin-top:8px"/>
 
-        <div class="split" style="margin-top:10px">
+        <div class="split" style="margin-top:12px">
           <div>
-            <div class="muted">Single file</div>
+            <div class="muted">📄 Upload a single file</div>
             <input id="uploadFile" type="file" style="margin-top:8px"/>
-            <button class="btn" style="width:100%;margin-top:8px" onclick="uploadSingle()">Upload file</button>
+            <button class="btn" style="width:100%;margin-top:8px" onclick="uploadSingle()">Upload File</button>
           </div>
           <div>
-            <div class="muted">Entire folder (chunked)</div>
+            <div class="muted">📁 Upload entire folder</div>
             <input id="uploadDir" type="file" webkitdirectory directory multiple style="margin-top:8px"/>
             <div class="split" style="grid-template-columns: 1fr 1fr; margin-top:8px">
-              <input id="chunkSize" type="number" min="10" max="500" value="120" title="Files per chunk"/>
-              <button class="btn" onclick="uploadFolderChunked()">Upload folder</button>
+              <input id="chunkSize" type="number" min="10" max="500" value="120" title="Files per chunk" style="font-size:12px"/>
+              <button class="btn" onclick="uploadFolderChunked()">Upload Folder</button>
             </div>
-
             <div class="progressWrap" id="progWrap" style="display:none">
               <div class="barOuter"><div class="barInner" id="progBar"></div></div>
               <div class="progRow">
@@ -487,25 +567,16 @@ APP_HTML = """
           </div>
         </div>
 
-        <div class="split" style="margin-top:12px">
-          <div>
-            <div class="muted">Create folder</div>
-            <input id="mkdirPath" placeholder="e.g. notes/2025" style="margin-top:8px"/>
-            <button class="btn ghost" style="width:100%;margin-top:8px" onclick="mkdir()">Create</button>
-          </div>
-          <div>
-            <div class="muted">Delete (file or folder)</div>
-            <input id="deletePath" placeholder="e.g. junk or temp.zip" style="margin-top:8px"/>
-            <button class="btn danger" style="width:100%;margin-top:8px" onclick="del()">Delete</button>
-          </div>
+        <h2 style="margin-top:20px">Create Folder</h2>
+        <div class="muted">Create a new folder in your storage:</div>
+        <div class="split" style="margin-top:8px;grid-template-columns:1fr auto">
+          <input id="mkdirPath" placeholder="e.g. documents/2025"/>
+          <button class="btn ghost" onclick="mkdir()">Create</button>
         </div>
 
-        <div class="muted" style="margin-top:12px">Rename (path → new name)</div>
-        <div class="split" style="margin-top:8px">
-          <input id="renamePath" placeholder="e.g. old.txt or folderA"/>
-          <input id="renameNew" placeholder="e.g. new.txt"/>
+        <div class="muted" style="margin-top:12px;font-size:11px;opacity:.8">
+          💡 Tip: Use the ✏️ and ✕ buttons in the file tree for quick rename and delete!
         </div>
-        <button class="btn ghost" style="width:100%;margin-top:8px" onclick="rename()">Rename</button>
 
         <div class="muted" style="margin-top:12px" id="filesMsg"></div>
       </div>
@@ -513,13 +584,60 @@ APP_HTML = """
 
     <div id="panelStats" class="panel grid two" style="display:none">
       <div class="card stack">
-        <h2>Storage</h2>
-        <div class="muted">Your usage + disk usage.</div>
-        <div class="kpi" id="storageKpi"></div>
+        <h2>Storage Analytics</h2>
+        <div class="muted">Your usage breakdown with visual chart.</div>
+        <div class="pie-chart-container">
+          <div class="pie-chart-wrapper" id="pieChart"></div>
+        </div>
+        <div class="pie-legend" id="pieLegend"></div>
+        <div class="kpi" id="storageKpi" style="margin-top:14px"></div>
       </div>
 
       <div class="card stack">
         __RIGHT_PANEL__
+      </div>
+    </div>
+
+    <div id="panelCustom" class="panel" style="display:none">
+      <div class="card stack" style="max-width:800px;margin:0 auto">
+        <h2>Customization</h2>
+        <div class="muted">Personalize your cloud interface colors and gradients.</div>
+
+        <h3 style="margin-top:20px;font-size:14px;position:relative">Colors</h3>
+        <div class="color-picker-row">
+          <div class="color-picker-label">Background</div>
+          <input type="color" class="color-input" id="colorBg" value="#0b0f16" onchange="updateColor('bg', this.value)"/>
+          <input type="text" class="rename-input" id="colorBgText" value="#0b0f16" onchange="updateColor('bg', this.value)"/>
+        </div>
+        <div class="color-picker-row">
+          <div class="color-picker-label">Glass/Card</div>
+          <input type="color" class="color-input" id="colorGlass" value="#141b2a" onchange="updateColor('glass', this.value)"/>
+          <input type="text" class="rename-input" id="colorGlassText" value="#141b2a" onchange="updateColor('glass', this.value)"/>
+        </div>
+        <div class="color-picker-row">
+          <div class="color-picker-label">Text</div>
+          <input type="color" class="color-input" id="colorText" value="#e8eefc" onchange="updateColor('text', this.value)"/>
+          <input type="text" class="rename-input" id="colorTextText" value="#e8eefc" onchange="updateColor('text', this.value)"/>
+        </div>
+        <div class="color-picker-row">
+          <div class="color-picker-label">Accent</div>
+          <input type="color" class="color-input" id="colorAccent" value="#7aa7ff" onchange="updateColor('accent', this.value)"/>
+          <input type="text" class="rename-input" id="colorAccentText" value="#7aa7ff" onchange="updateColor('accent', this.value)"/>
+        </div>
+        <div class="color-picker-row">
+          <div class="color-picker-label">Danger</div>
+          <input type="color" class="color-input" id="colorDanger" value="#ff7a7a" onchange="updateColor('danger', this.value)"/>
+          <input type="text" class="rename-input" id="colorDangerText" value="#ff7a7a" onchange="updateColor('danger', this.value)"/>
+        </div>
+
+        <h3 style="margin-top:24px;font-size:14px;position:relative">UI Gradients</h3>
+        <div class="muted" style="margin-bottom:10px">Choose a preset gradient for the background:</div>
+        <div class="gradient-preset" id="gradientPresets"></div>
+
+        <div style="margin-top:20px">
+          <button class="btn" onclick="resetCustomization()">Reset to Default</button>
+          <button class="btn ghost" onclick="saveCustomization()" style="margin-left:10px">Save Preferences</button>
+        </div>
       </div>
     </div>
   </div>
@@ -570,43 +688,123 @@ APP_HTML = """
   function setTab(which){
     document.getElementById("tabFiles").classList.toggle("active", which==="files");
     document.getElementById("tabStats").classList.toggle("active", which==="stats");
+    document.getElementById("tabCustom").classList.toggle("active", which==="custom");
     document.getElementById("panelFiles").style.display = (which==="files") ? "" : "none";
     document.getElementById("panelStats").style.display = (which==="stats") ? "" : "none";
+    document.getElementById("panelCustom").style.display = (which==="custom") ? "" : "none";
   }
 
   async function showTab(which){
     setTab(which);
-    if(which==="files") await refreshTree();
+    if(which==="files"){
+      await refreshTree();
+      if(!storageDataCache) await refreshStorage();
+      else renderPieChart(storageDataCache, true); // Update mini chart
+    }
     if(which==="stats") await refreshStorage();
+    if(which==="custom"){
+      loadCustomization();
+      setTimeout(initGradientPresets, 50);
+    }
   }
+
+  let storageDataCache = null;
 
   async function refreshStorage(){
     const r = await apiFetch("/api/storage_stats");
     if(r.status===401){ location.href="/login"; return; }
     const data = await r.json();
+    storageDataCache = data;
+
+    // Render pie charts (full and mini)
+    renderPieChart(data, false);
+    renderPieChart(data, true);
 
     const el = document.getElementById("storageKpi");
-    el.innerHTML = `
-      <div class="kbox">
-        <div class="badge">Your usage</div>
-        <div class="big">${data.user.used_h}</div>
-        <div class="badge">${data.user.files} files</div>
-      </div>
-      <div class="kbox">
-        <div class="badge">Disk total</div>
-        <div class="big">${data.disk.total_h}</div>
-        <div class="badge">Free: ${data.disk.free_h}</div>
-      </div>
-      <div class="kbox">
-        <div class="badge">Disk used</div>
-        <div class="big">${data.disk.used_h}</div>
-        <div class="badge">Overall used</div>
-      </div>
-    `;
+    if(el){
+      el.innerHTML = `
+        <div class="kbox">
+          <div class="badge">Your usage</div>
+          <div class="big">${data.user.used_h}</div>
+          <div class="badge">${data.user.files} files</div>
+        </div>
+        <div class="kbox">
+          <div class="badge">Disk total</div>
+          <div class="big">${data.disk.total_h}</div>
+          <div class="badge">Free: ${data.disk.free_h}</div>
+        </div>
+        <div class="kbox">
+          <div class="badge">Disk used</div>
+          <div class="big">${data.disk.used_h}</div>
+          <div class="badge">Overall used</div>
+        </div>
+      `;
+    }
 
     if(data.admin && data.admin.users){
       renderAdmin(data.admin.users);
     }
+  }
+
+  function renderPieChart(data, isMini=false){
+    const userUsed = data.user.used || 0;
+    const diskTotal = data.disk.total || 1;
+    const diskFree = data.disk.free || 0;
+    const diskUsed = data.disk.used || 0;
+    const otherUsed = Math.max(0, diskUsed - userUsed);
+
+    const userPct = (userUsed / diskTotal) * 100;
+    const otherPct = (otherUsed / diskTotal) * 100;
+    const freePct = (diskFree / diskTotal) * 100;
+
+    const colors = ['#7aa7ff', '#ff7a7a', '#a8ffbf'];
+    const segments = [
+      {label: 'Your files', value: userPct, color: colors[0], bytes: userUsed},
+      {label: 'Other usage', value: otherPct, color: colors[1], bytes: otherUsed},
+      {label: 'Free space', value: freePct, color: colors[2], bytes: diskFree}
+    ].filter(s => s.value > 0);
+
+    let currentAngle = 0;
+    const size = isMini ? 160 : 200;
+    const radius = isMini ? 72 : 90;
+    const centerX = size / 2;
+    const centerY = size / 2;
+
+    let svg = `<svg class="pie-chart-svg" viewBox="0 0 ${size} ${size}">`;
+    segments.forEach(seg => {
+      const angle = (seg.value / 100) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + angle;
+      
+      const x1 = centerX + radius * Math.cos((startAngle - 90) * Math.PI / 180);
+      const y1 = centerY + radius * Math.sin((startAngle - 90) * Math.PI / 180);
+      const x2 = centerX + radius * Math.cos((endAngle - 90) * Math.PI / 180);
+      const y2 = centerY + radius * Math.sin((endAngle - 90) * Math.PI / 180);
+      
+      const largeArc = angle > 180 ? 1 : 0;
+      
+      svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z" 
+        fill="${seg.color}" stroke="rgba(255,255,255,.15)" stroke-width="${isMini ? '1.5' : '2'}"/>`;
+      
+      currentAngle += angle;
+    });
+    svg += `</svg>`;
+
+    const chartId = isMini ? "pieChartMini" : "pieChart";
+    const legendId = isMini ? "pieLegendMini" : "pieLegend";
+    
+    const chartEl = document.getElementById(chartId);
+    if(chartEl) chartEl.innerHTML = svg;
+
+    let legend = '';
+    segments.forEach(seg => {
+      legend += `<div class="pie-legend-item">
+        <div class="pie-legend-color" style="background:${seg.color}"></div>
+        <div><b>${seg.label}</b>: ${seg.value.toFixed(1)}% ${isMini ? '' : '(' + fmtBytes(seg.bytes) + ')'}</div>
+      </div>`;
+    });
+    const legendEl = document.getElementById(legendId);
+    if(legendEl) legendEl.innerHTML = legend;
   }
 
   function renderAdmin(users){
@@ -633,6 +831,7 @@ APP_HTML = """
   }
 
   let folderCounter = 0;
+  let renamingPath = null;
   function renderTree(node, depth=0){
     if(!node) return "";
     let html = "";
@@ -641,13 +840,26 @@ APP_HTML = """
       const folderId = "f" + (folderCounter++);
       const hasChildren = node.children && node.children.length > 0;
       const collapsedClass = hasChildren ? "" : "collapsed";
+      const path = node.path || "";
+      const pathEscaped = path.replace(/'/g, "\\'");
       
       html += `<div class="node">
-        <div class="folder-header" onclick="toggleFolder('${folderId}')">
-          <span class="folder-toggle ${collapsedClass}" id="toggle_${folderId}">▼</span>
-          <span class="badge">📁</span>
-          <b>${escapeHtml(label)}</b>
-          <span class="badge">${escapeHtml(node.path || "")}</span>
+        <div class="node-wrapper">
+          <div class="folder-header" onclick="toggleFolder('${folderId}')" style="flex:1">
+            <span class="folder-toggle ${collapsedClass}" id="toggle_${folderId}">▼</span>
+            <span class="badge">📁</span>
+            ${renamingPath === path ? 
+              `<input type="text" class="rename-input" value="${escapeHtml(label)}" 
+                onkeydown="if(event.key==='Enter') finishRename('${pathEscaped}', this.value); if(event.key==='Escape') cancelRename();"
+                onblur="finishRename('${pathEscaped}', this.value)" autofocus/>` :
+              `<b>${escapeHtml(label)}</b>`
+            }
+            <span class="badge">${escapeHtml(path)}</span>
+          </div>
+          ${path ? `<div class="node-actions">
+            <button class="action-btn rename" onclick="event.stopPropagation(); startRename('${pathEscaped}')" title="Rename">✏️</button>
+            <button class="action-btn delete" onclick="event.stopPropagation(); quickDelete('${pathEscaped}')" title="Delete">✕</button>
+          </div>` : ''}
         </div>`;
       
       if(hasChildren){
@@ -658,9 +870,25 @@ APP_HTML = """
       html += `</div>`;
     }else{
       const dl = `/download?p=${encodeURIComponent(node.path)}`;
-      html += `<div class="node click" onclick="location.href='${dl}'">
-        <span class="badge">📄</span> ${escapeHtml(node.name)}
-        <span class="badge"> • ${fmtBytes(node.size)}</span>
+      const path = node.path || "";
+      const pathEscaped = path.replace(/'/g, "\\'");
+      html += `<div class="node">
+        <div class="node-wrapper">
+          <div class="node-content click" onclick="location.href='${dl}'" style="flex:1">
+            <span class="badge">📄</span>
+            ${renamingPath === path ? 
+              `<input type="text" class="rename-input" value="${escapeHtml(node.name)}" 
+                onkeydown="if(event.key==='Enter') finishRename('${pathEscaped}', this.value); if(event.key==='Escape') cancelRename();"
+                onblur="finishRename('${pathEscaped}', this.value)" autofocus/>` :
+              `<span>${escapeHtml(node.name)}</span>`
+            }
+            <span class="badge"> • ${fmtBytes(node.size)}</span>
+          </div>
+          <div class="node-actions">
+            <button class="action-btn rename" onclick="event.stopPropagation(); startRename('${pathEscaped}')" title="Rename">✏️</button>
+            <button class="action-btn delete" onclick="event.stopPropagation(); quickDelete('${pathEscaped}')" title="Delete">✕</button>
+          </div>
+        </div>
       </div>`;
     }
     return html;
@@ -707,7 +935,8 @@ APP_HTML = """
     }
 
     toast(data.msg || "Done.", true);
-    refreshTree();
+    await refreshTree();
+    if(storageDataCache) await refreshStorage();
   }
 
   async function uploadFolderChunked(){
@@ -769,6 +998,7 @@ APP_HTML = """
     setTimeout(()=>setProgress(false, 0, ""), 700);
 
     toast("Folder uploaded successfully.", true);
+    if(storageDataCache) await refreshStorage();
   }
 
   async function mkdir(){
@@ -789,7 +1019,7 @@ APP_HTML = """
     }
 
     toast(data.msg || "Created.", true);
-    refreshTree();
+    await refreshTree();
   }
 
   async function rename(){
@@ -833,11 +1063,205 @@ APP_HTML = """
     }
 
     toast(data.msg || "Deleted.", true);
+    await refreshTree();
+    if(storageDataCache) await refreshStorage();
+  }
+
+  async function quickDelete(path){
+    if(!path) return;
+    if(!confirm(`Delete "${path}"? This cannot be undone.`)) return;
+
+    const r = await apiFetch("/api/delete", {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({path: path})
+    });
+    if(r.status===401){ location.href="/login"; return; }
+    let data=null; try{ data = await r.json(); }catch(e){}
+
+    if(!r.ok){
+      toast((data && data.msg) ? data.msg : ("Failed: HTTP " + r.status), false);
+      return;
+    }
+
+    toast(data.msg || "Deleted.", true);
+    await refreshTree();
+    if(storageDataCache) await refreshStorage();
+  }
+
+  function startRename(path){
+    renamingPath = path;
     refreshTree();
+  }
+
+  function cancelRename(){
+    renamingPath = null;
+    refreshTree();
+  }
+
+  async function finishRename(path, newName){
+    if(!path || !newName || newName.trim() === ""){ 
+      cancelRename(); 
+      return; 
+    }
+
+    renamingPath = null;
+    const r = await apiFetch("/api/rename", {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({path: path, new_name: newName.trim()})
+    });
+    if(r.status===401){ location.href="/login"; return; }
+    let data=null; try{ data = await r.json(); }catch(e){}
+
+    if(!r.ok){
+      toast((data && data.msg) ? data.msg : ("Failed: HTTP " + r.status), false);
+      await refreshTree();
+      return;
+    }
+
+    toast(data.msg || "Renamed.", true);
+    await refreshTree();
+    if(storageDataCache) await refreshStorage();
+  }
+
+  // Customization functions
+  const gradientPresets = [
+    {name: "Ocean", colors: ["rgba(122,167,255,.18)", "rgba(255,122,214,.12)"]},
+    {name: "Sunset", colors: ["rgba(255,122,122,.20)", "rgba(255,200,100,.15)"]},
+    {name: "Forest", colors: ["rgba(100,200,150,.18)", "rgba(150,255,200,.12)"]},
+    {name: "Purple", colors: ["rgba(200,150,255,.20)", "rgba(255,150,200,.15)"]},
+    {name: "Blue", colors: ["rgba(100,150,255,.22)", "rgba(150,200,255,.15)"]},
+    {name: "Dark", colors: ["rgba(50,50,80,.15)", "rgba(80,50,50,.10)"]},
+    {name: "Neon", colors: ["rgba(0,255,200,.20)", "rgba(255,0,200,.18)"]},
+    {name: "Warm", colors: ["rgba(255,180,100,.20)", "rgba(255,220,150,.15)"]}
+  ];
+
+  function loadCustomization(){
+    const saved = localStorage.getItem("cloudCustomization");
+    if(!saved) return;
+
+    try{
+      const prefs = JSON.parse(saved);
+      if(prefs.colors){
+        Object.keys(prefs.colors).forEach(key => {
+          const val = prefs.colors[key];
+          updateColor(key, val, false);
+        });
+      }
+      if(prefs.gradient){
+        applyGradient(prefs.gradient, false);
+      }
+    }catch(e){}
+  }
+
+  function updateColor(key, value, save=true){
+    const root = document.documentElement;
+    const textInput = document.getElementById(`color${key.charAt(0).toUpperCase() + key.slice(1)}Text`);
+    const colorInput = document.getElementById(`color${key.charAt(0).toUpperCase() + key.slice(1)}`);
+    
+    if(textInput) textInput.value = value;
+    if(colorInput) colorInput.value = value;
+
+    if(key === 'bg'){
+      root.style.setProperty('--bg', value);
+    }else if(key === 'glass'){
+      const rgb = hexToRgb(value);
+      if(rgb) root.style.setProperty('--glass', `rgba(${rgb.r},${rgb.g},${rgb.b},.84)`);
+    }else if(key === 'text'){
+      root.style.setProperty('--text', value);
+    }else if(key === 'accent'){
+      root.style.setProperty('--accent', value);
+    }else if(key === 'danger'){
+      root.style.setProperty('--danger', value);
+    }
+
+    if(save) saveCustomization();
+  }
+
+  function hexToRgb(hex){
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  function initGradientPresets(){
+    const container = document.getElementById("gradientPresets");
+    if(!container) return;
+    
+    const saved = localStorage.getItem("cloudCustomization");
+    let activeGradient = null;
+    if(saved){
+      try{
+        const prefs = JSON.parse(saved);
+        activeGradient = prefs.gradient;
+      }catch(e){}
+    }
+
+    gradientPresets.forEach((preset, idx) => {
+      const btn = document.createElement("div");
+      btn.className = `gradient-btn ${activeGradient === idx ? 'active' : ''}`;
+      btn.style.background = `radial-gradient(1000px 600px at 15% 15%, ${preset.colors[0]}, transparent 60%),
+        radial-gradient(900px 600px at 85% 55%, ${preset.colors[1]}, transparent 60%)`;
+      btn.onclick = () => applyGradient(idx);
+      btn.innerHTML = `<div class="gradient-name">${preset.name}</div>`;
+      container.appendChild(btn);
+    });
+  }
+
+  function applyGradient(index, save=true){
+    if(index < 0 || index >= gradientPresets.length) return;
+    const preset = gradientPresets[index];
+    document.body.style.background = `
+      radial-gradient(1000px 600px at 15% 15%, ${preset.colors[0]}, transparent 60%),
+      radial-gradient(900px 600px at 85% 55%, ${preset.colors[1]}, transparent 60%),
+      var(--bg)
+    `;
+
+    document.querySelectorAll('.gradient-btn').forEach((btn, idx) => {
+      btn.classList.toggle('active', idx === index);
+    });
+
+    if(save) saveCustomization();
+  }
+
+  function saveCustomization(){
+    const colors = {
+      bg: document.getElementById("colorBg")?.value || "#0b0f16",
+      glass: document.getElementById("colorGlass")?.value || "#141b2a",
+      text: document.getElementById("colorText")?.value || "#e8eefc",
+      accent: document.getElementById("colorAccent")?.value || "#7aa7ff",
+      danger: document.getElementById("colorDanger")?.value || "#ff7a7a"
+    };
+
+    let gradientIndex = null;
+    document.querySelectorAll('.gradient-btn').forEach((btn, idx) => {
+      if(btn.classList.contains('active')) gradientIndex = idx;
+    });
+
+    localStorage.setItem("cloudCustomization", JSON.stringify({
+      colors: colors,
+      gradient: gradientIndex
+    }));
+
+    toast("Customization saved!", true);
+  }
+
+  function resetCustomization(){
+    if(!confirm("Reset all customization to defaults?")) return;
+    
+    localStorage.removeItem("cloudCustomization");
+    location.reload();
   }
 
   (async function boot(){
     await refreshTree();
+    await refreshStorage();
+    loadCustomization();
+    setTimeout(initGradientPresets, 100);
   })();
 </script>
 </body></html>
