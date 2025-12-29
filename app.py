@@ -508,6 +508,32 @@ APP_HTML = """
     position:absolute;bottom:6px;left:8px;right:8px;font-size:11px;
     background:rgba(0,0,0,.5);padding:3px 6px;border-radius:6px;text-align:center;
   }
+
+  /* Random Generator styles */
+  #spinWheelCanvas{
+    transition:transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+  }
+  .entry-item{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;margin:4px 0;
+    border-radius:8px;background:rgba(13,20,36,.55);border:1px solid rgba(255,255,255,.08);
+    transition:all .12s ease;
+  }
+  .entry-item:hover{background:rgba(13,20,36,.75);border-color:rgba(255,140,66,.25)}
+  .entry-item input{
+    flex:1;background:transparent;border:none;padding:4px 8px;font-size:13px;color:var(--text);
+  }
+  .entry-item input:focus{outline:1px solid rgba(255,140,66,.50);border-radius:4px}
+  .entry-actions{display:flex;gap:4px}
+  .entry-btn{
+    width:24px;height:24px;border-radius:6px;border:none;background:rgba(255,255,255,.10);
+    color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:12px;transition:all .12s ease;padding:0;
+  }
+  .entry-btn:hover{background:rgba(255,140,66,.25);transform:scale(1.1)}
+  .entry-btn.delete:hover{background:rgba(255,122,122,.35)}
+  select{
+    font-family:inherit;
+  }
 </style>
 </head><body>
   <div class="topbar">
@@ -522,6 +548,7 @@ APP_HTML = """
     <div class="tabs">
       <div class="tab active" id="tabFiles" onclick="showTab('files')">Files</div>
       <div class="tab" id="tabStats" onclick="showTab('stats')">Stats</div>
+      <div class="tab" id="tabRandom" onclick="showTab('random')">Random Generator</div>
       <div class="tab" id="tabCustom" onclick="showTab('custom')">Customization</div>
     </div>
 
@@ -598,6 +625,46 @@ APP_HTML = """
 
       <div class="card stack">
         __RIGHT_PANEL__
+      </div>
+    </div>
+
+    <div id="panelRandom" class="panel" style="display:none">
+      <div class="card stack" style="max-width:900px;margin:0 auto">
+        <h2>Random Generator</h2>
+        <div class="muted">Spin the wheel to get a random choice! Manage your options below.</div>
+
+        <div style="margin-top:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div class="muted">Category:</div>
+          <select id="randomCategory" onchange="loadCategoryData()" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:rgba(13,20,36,.72);color:var(--text);cursor:pointer;outline:none">
+            <option value="food">Food</option>
+            <option value="pets">Pet Ideas</option>
+            <option value="movies">Movies</option>
+          </select>
+          <button class="btn" onclick="spinWheel()" id="spinBtn" style="margin-left:auto">🎰 Spin!</button>
+        </div>
+
+        <div style="margin-top:24px;display:flex;gap:20px;align-items:flex-start">
+          <div style="flex:1">
+            <h3 style="margin:0 0 12px;font-size:14px;position:relative">Wheel</h3>
+            <div style="position:relative;display:flex;justify-content:center;align-items:center;min-height:400px">
+              <canvas id="spinWheelCanvas" width="400" height="400" style="max-width:100%;height:auto;border-radius:50%;box-shadow:0 8px 32px rgba(0,0,0,.4)"></canvas>
+              <div id="spinResult" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:900;text-align:center;pointer-events:none;z-index:10;text-shadow:2px 2px 8px rgba(0,0,0,.8)"></div>
+            </div>
+          </div>
+
+          <div style="flex:1">
+            <h3 style="margin:0 0 12px;font-size:14px;position:relative">Manage Entries</h3>
+            <div style="margin-bottom:10px">
+              <div class="split" style="grid-template-columns:1fr auto">
+                <input id="newEntryInput" placeholder="Add new entry..." style="font-size:13px" onkeydown="if(event.key==='Enter') addEntry()"/>
+                <button class="btn ghost" onclick="addEntry()" style="white-space:nowrap">Add</button>
+              </div>
+            </div>
+            <div id="entriesList" style="max-height:350px;overflow-y:auto;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:8px;background:rgba(13,20,36,.40)">
+              <!-- Entries will be loaded here -->
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -691,9 +758,11 @@ APP_HTML = """
   function setTab(which){
     document.getElementById("tabFiles").classList.toggle("active", which==="files");
     document.getElementById("tabStats").classList.toggle("active", which==="stats");
+    document.getElementById("tabRandom").classList.toggle("active", which==="random");
     document.getElementById("tabCustom").classList.toggle("active", which==="custom");
     document.getElementById("panelFiles").style.display = (which==="files") ? "" : "none";
     document.getElementById("panelStats").style.display = (which==="stats") ? "" : "none";
+    document.getElementById("panelRandom").style.display = (which==="random") ? "" : "none";
     document.getElementById("panelCustom").style.display = (which==="custom") ? "" : "none";
   }
 
@@ -705,6 +774,9 @@ APP_HTML = """
       else renderPieChart(storageDataCache, true); // Update mini chart
     }
     if(which==="stats") await refreshStorage();
+    if(which==="random"){
+      loadCategoryData();
+    }
     if(which==="custom"){
       loadCustomization();
       setTimeout(initGradientPresets, 50);
@@ -857,8 +929,17 @@ APP_HTML = """
   function renderTree(node, depth=0){
     if(!node) return "";
     let html = "";
+    
+    // Skip rendering root folder, just show its children
+    if(node.type==="folder" && node.path===""){
+      if(node.children && node.children.length > 0){
+        node.children.forEach(ch=>{ html += renderTree(ch, depth); });
+      }
+      return html;
+    }
+    
     if(node.type==="folder"){
-      const label = node.path==="" ? "(root)" : node.name;
+      const label = node.name;
       const folderId = "f" + (folderCounter++);
       const hasChildren = node.children && node.children.length > 0;
       const path = node.path || "";
@@ -880,10 +961,10 @@ APP_HTML = """
             }
             <span class="badge">${escapeHtml(path)}</span>
           </div>
-          ${path ? `<div class="node-actions">
+          <div class="node-actions">
             <button class="action-btn rename" onclick="event.stopPropagation(); startRename('${pathEscaped}')" title="Rename">✏️</button>
             <button class="action-btn delete" onclick="event.stopPropagation(); quickDelete('${pathEscaped}')" title="Delete">✕</button>
-          </div>` : ''}
+          </div>
         </div>`;
       
       if(hasChildren){
@@ -1353,10 +1434,228 @@ APP_HTML = """
     location.reload();
   }
 
+  // Random Generator functions
+  const defaultPresets = {
+    food: ["Pizza", "Sushi", "Burger", "Tacos", "Pasta", "Ramen", "Steak", "Salad", "Ice Cream", "Sandwich", "Curry", "BBQ"],
+    pets: ["Golden Retriever", "Siamese Cat", "Parrot", "Hamster", "Rabbit", "Fish", "Turtle", "Guinea Pig", "Ferret", "Chinchilla", "Gecko", "Hedgehog"],
+    movies: ["The Matrix", "Inception", "Interstellar", "The Dark Knight", "Pulp Fiction", "Fight Club", "The Shawshank Redemption", "Forrest Gump", "The Godfather", "Star Wars", "Lord of the Rings", "Avatar"]
+  };
+
+  let randomData = {
+    food: [...defaultPresets.food],
+    pets: [...defaultPresets.pets],
+    movies: [...defaultPresets.movies]
+  };
+
+  let isSpinning = false;
+  let currentRotation = 0;
+
+  function loadRandomData(){
+    const saved = localStorage.getItem("randomGeneratorData");
+    if(saved){
+      try{
+        const parsed = JSON.parse(saved);
+        randomData = {...defaultPresets, ...parsed};
+        // Ensure all categories exist
+        if(!randomData.food) randomData.food = [...defaultPresets.food];
+        if(!randomData.pets) randomData.pets = [...defaultPresets.pets];
+        if(!randomData.movies) randomData.movies = [...defaultPresets.movies];
+      }catch(e){
+        randomData = {...defaultPresets};
+      }
+    }
+    saveRandomData();
+  }
+
+  function saveRandomData(){
+    localStorage.setItem("randomGeneratorData", JSON.stringify(randomData));
+  }
+
+  function loadCategoryData(){
+    loadRandomData();
+    const category = document.getElementById("randomCategory").value;
+    const entries = randomData[category] || [];
+    renderEntries(entries);
+    drawWheel(entries);
+  }
+
+  function renderEntries(entries){
+    const container = document.getElementById("entriesList");
+    if(!container) return;
+
+    if(entries.length === 0){
+      container.innerHTML = '<div class="muted" style="text-align:center;padding:20px">No entries. Add some above!</div>';
+      return;
+    }
+
+    const category = document.getElementById("randomCategory").value;
+    let html = '';
+    entries.forEach((entry, idx) => {
+      html += `
+        <div class="entry-item">
+          <input type="text" value="${escapeHtml(entry)}" 
+            onchange="updateEntry(${idx}, this.value)"
+            onkeydown="if(event.key==='Enter') this.blur()"/>
+          <div class="entry-actions">
+            <button class="entry-btn delete" onclick="removeEntry(${idx})" title="Remove">✕</button>
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  }
+
+  function addEntry(){
+    const input = document.getElementById("newEntryInput");
+    const value = input.value.trim();
+    if(!value) return;
+
+    const category = document.getElementById("randomCategory").value;
+    randomData[category].push(value);
+    saveRandomData();
+    loadCategoryData();
+    input.value = '';
+    input.focus();
+  }
+
+  function updateEntry(index, value){
+    const category = document.getElementById("randomCategory").value;
+    const trimmed = value.trim();
+    if(!trimmed){
+      removeEntry(index);
+      return;
+    }
+    randomData[category][index] = trimmed;
+    saveRandomData();
+    drawWheel(randomData[category]);
+  }
+
+  function removeEntry(index){
+    const category = document.getElementById("randomCategory").value;
+    randomData[category].splice(index, 1);
+    saveRandomData();
+    loadCategoryData();
+  }
+
+  function drawWheel(entries){
+    const canvas = document.getElementById("spinWheelCanvas");
+    if(!canvas || !entries || entries.length === 0) return;
+
+    const ctx = canvas.getContext("2d");
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 20;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const sliceAngle = (2 * Math.PI) / entries.length;
+    const colors = [
+      "#ff8c42", "#ff6b6b", "#4ecdc4", "#45b7d1", "#f7b731", "#5f27cd",
+      "#00d2d3", "#ff6348", "#ffa502", "#2ed573", "#ff6b81", "#a55eea"
+    ];
+
+    // Draw slices
+    entries.forEach((entry, idx) => {
+      const startAngle = idx * sliceAngle - Math.PI / 2;
+      const endAngle = (idx + 1) * sliceAngle - Math.PI / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = colors[idx % colors.length];
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.2)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw text
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(startAngle + sliceAngle / 2);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 14px system-ui";
+      ctx.shadowColor = "rgba(0,0,0,.5)";
+      ctx.shadowBlur = 4;
+      const text = entry.length > 12 ? entry.substring(0, 10) + "..." : entry;
+      ctx.fillText(text, radius * 0.6, 0);
+      ctx.restore();
+    });
+
+    // Draw center circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgba(10,10,10,.9)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.3)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Draw pointer
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - radius - 15);
+    ctx.lineTo(centerX - 15, centerY - radius - 5);
+    ctx.lineTo(centerX + 15, centerY - radius - 5);
+    ctx.closePath();
+    ctx.fillStyle = "#ff8c42";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.3)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function spinWheel(){
+    if(isSpinning) return;
+    
+    const category = document.getElementById("randomCategory").value;
+    const entries = randomData[category] || [];
+    if(entries.length === 0){
+      toast("Add some entries first!", false);
+      return;
+    }
+
+    isSpinning = true;
+    const btn = document.getElementById("spinBtn");
+    const resultEl = document.getElementById("spinResult");
+    btn.disabled = true;
+    resultEl.textContent = '';
+
+    // Random spin (3-5 full rotations + random angle)
+    const spins = 3 + Math.random() * 2;
+    const randomAngle = Math.random() * 360;
+    const totalRotation = currentRotation + (spins * 360) + randomAngle;
+    
+    const canvas = document.getElementById("spinWheelCanvas");
+    canvas.style.transform = `rotate(${totalRotation}deg)`;
+    currentRotation = totalRotation % 360;
+
+    // Calculate result
+    setTimeout(() => {
+      const sliceAngle = 360 / entries.length;
+      // Normalize rotation to 0-360, then reverse (since we rotate clockwise but measure counter-clockwise)
+      let normalizedAngle = (360 - (currentRotation % 360)) % 360;
+      // Adjust for pointer at top (270 degrees in our coordinate system)
+      normalizedAngle = (normalizedAngle + 90) % 360;
+      const winnerIndex = Math.floor(normalizedAngle / sliceAngle) % entries.length;
+      const winner = entries[winnerIndex];
+
+      resultEl.textContent = winner;
+      resultEl.style.color = "#ff8c42";
+      resultEl.style.fontSize = "28px";
+      
+      toast(`🎉 Winner: ${winner}!`, true);
+      isSpinning = false;
+      btn.disabled = false;
+    }, 4000);
+  }
+
   (async function boot(){
     await refreshTree();
     await refreshStorage();
     loadCustomization();
+    loadRandomData();
     setTimeout(initGradientPresets, 100);
   })();
 </script>
@@ -1571,7 +1870,7 @@ def api_upload():
     except Exception as e:
         return jsonify({"ok": False, "msg": f"Upload failed: {e}"})
 
-    return jsonify({"ok": True, "msg": f"Uploaded: {(folder or '(root)')} / {name}"})
+    return jsonify({"ok": True, "msg": f"Uploaded: {(folder or 'root')} / {name}"})
 
 @app.route("/api/upload_folder_chunk", methods=["POST"])
 def api_upload_folder_chunk():
