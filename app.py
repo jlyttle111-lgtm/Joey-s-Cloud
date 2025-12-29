@@ -379,6 +379,25 @@ APP_HTML = """
   .click{cursor:pointer}
   .ok{color:var(--ok)}
   .err{color:#ffb3b3}
+  
+  /* Collapsible folder styles */
+  .folder-header{
+    display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;
+  }
+  .folder-toggle{
+    width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
+    border-radius:4px;background:rgba(122,167,255,.15);color:var(--accent);
+    font-size:11px;transition:transform .15s ease, background .15s ease;
+    flex-shrink:0;
+  }
+  .folder-toggle:hover{background:rgba(122,167,255,.25)}
+  .folder-toggle.collapsed{transform:rotate(-90deg)}
+  .folder-children{
+    margin-left:24px;margin-top:4px;overflow:hidden;
+    transition:max-height .2s ease, opacity .15s ease;
+  }
+  .folder-children.collapsed{max-height:0;opacity:0;margin-top:0}
+  .folder-children:not(.collapsed){max-height:10000px;opacity:1}
 
   .panel{animation:fadeIn .16s ease both}
   @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -609,20 +628,34 @@ APP_HTML = """
     const r = await apiFetch("/api/file_tree");
     if(r.status===401){ location.href="/login"; return; }
     const tree = await r.json();
+    folderCounter = 0;
     document.getElementById("fileTree").innerHTML = renderTree(tree);
   }
 
-  function renderTree(node){
+  let folderCounter = 0;
+  function renderTree(node, depth=0){
     if(!node) return "";
     let html = "";
     if(node.type==="folder"){
       const label = node.path==="" ? "(root)" : node.name;
-      html += `<div class="node"><span class="badge">📁</span> <b>${escapeHtml(label)}</b> <span class="badge">${escapeHtml(node.path)}</span></div>`;
-      if(node.children && node.children.length){
-        html += `<div class="indent">`;
-        node.children.forEach(ch=>{ html += renderTree(ch); });
+      const folderId = "f" + (folderCounter++);
+      const hasChildren = node.children && node.children.length > 0;
+      const collapsedClass = hasChildren ? "" : "collapsed";
+      
+      html += `<div class="node">
+        <div class="folder-header" onclick="toggleFolder('${folderId}')">
+          <span class="folder-toggle ${collapsedClass}" id="toggle_${folderId}">▼</span>
+          <span class="badge">📁</span>
+          <b>${escapeHtml(label)}</b>
+          <span class="badge">${escapeHtml(node.path || "")}</span>
+        </div>`;
+      
+      if(hasChildren){
+        html += `<div class="folder-children" id="${folderId}">`;
+        node.children.forEach(ch=>{ html += renderTree(ch, depth+1); });
         html += `</div>`;
       }
+      html += `</div>`;
     }else{
       const dl = `/download?p=${encodeURIComponent(node.path)}`;
       html += `<div class="node click" onclick="location.href='${dl}'">
@@ -631,6 +664,21 @@ APP_HTML = """
       </div>`;
     }
     return html;
+  }
+
+  function toggleFolder(folderId){
+    const children = document.getElementById(folderId);
+    const toggle = document.getElementById("toggle_" + folderId);
+    if(!children || !toggle) return;
+    
+    const isCollapsed = children.classList.contains("collapsed");
+    if(isCollapsed){
+      children.classList.remove("collapsed");
+      toggle.classList.remove("collapsed");
+    }else{
+      children.classList.add("collapsed");
+      toggle.classList.add("collapsed");
+    }
   }
 
   function fmtBytes(n){
