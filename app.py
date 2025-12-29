@@ -552,9 +552,12 @@ APP_HTML = """
           </div>
           <div>
             <div class="muted">📁 Upload entire folder</div>
-            <input id="uploadDir" type="file" webkitdirectory directory multiple style="margin-top:8px"/>
+            <input id="uploadDir" type="file" webkitdirectory directory multiple style="margin-top:8px" onchange="calculateOptimalChunkSize()"/>
             <div class="split" style="grid-template-columns: 1fr 1fr; margin-top:8px">
-              <input id="chunkSize" type="number" min="10" max="500" value="120" title="Files per chunk" style="font-size:12px"/>
+              <div>
+                <input id="chunkSize" type="number" min="10" max="500" value="120" title="Files per chunk" style="font-size:12px"/>
+                <div class="mini" id="chunkSuggestion" style="margin-top:4px;font-size:11px;opacity:.8"></div>
+              </div>
               <button class="btn" onclick="uploadFolderChunked()">Upload Folder</button>
             </div>
             <div class="progressWrap" id="progWrap" style="display:none">
@@ -822,12 +825,28 @@ APP_HTML = """
     wrap.innerHTML = html;
   }
 
-  async function refreshTree(){
+  async function refreshTree(expandPaths=[]){
+    // Collect currently expanded folders before refresh
+    const currentlyExpanded = new Set(expandedFolders);
+    
+    // Add any paths we want to ensure are expanded
+    expandPaths.forEach(path => {
+      // Also expand all parent paths
+      const parts = path.split('/').filter(p => p);
+      let currentPath = '';
+      parts.forEach(part => {
+        currentPath = currentPath ? currentPath + '/' + part : part;
+        currentlyExpanded.add(currentPath);
+      });
+    });
+    
+    // Update the set
+    expandedFolders = currentlyExpanded;
+    
     const r = await apiFetch("/api/file_tree");
     if(r.status===401){ location.href="/login"; return; }
     const tree = await r.json();
     folderCounter = 0;
-    // Preserve expanded folders - don't clear the set, just re-render
     document.getElementById("fileTree").innerHTML = renderTree(tree);
   }
 
@@ -943,8 +962,59 @@ APP_HTML = """
     }
 
     toast(data.msg || "Done.", true);
-    await refreshTree();
+    // Expand the folder we uploaded to
+    const targetFolder = folder || '';
+    await refreshTree([targetFolder]);
     if(storageDataCache) await refreshStorage();
+  }
+
+  function calculateOptimalChunkSize(){
+    const files = document.getElementById("uploadDir").files;
+    const suggestionEl = document.getElementById("chunkSuggestion");
+    const chunkSizeEl = document.getElementById("chunkSize");
+    
+    if(!files || !files.length){
+      suggestionEl.textContent = '';
+      return;
+    }
+
+    const totalFiles = files.length;
+    let totalSize = 0;
+    for(let i = 0; i < files.length; i++){
+      totalSize += files[i].size;
+    }
+
+    // Calculate optimal chunk size based on:
+    // - Small folders (< 100 files): smaller chunks (50-80)
+    // - Medium folders (100-1000 files): medium chunks (100-150)
+    // - Large folders (> 1000 files): larger chunks (150-200)
+    // - Very large files: smaller chunks to avoid timeouts
+    const avgFileSize = totalSize / totalFiles;
+    let suggestedChunk = 120; // default
+
+    if(totalFiles < 100){
+      suggestedChunk = Math.max(30, Math.min(80, Math.floor(totalFiles / 2)));
+    }else if(totalFiles < 500){
+      suggestedChunk = Math.max(80, Math.min(150, Math.floor(totalFiles / 4)));
+    }else if(totalFiles < 1000){
+      suggestedChunk = Math.max(120, Math.min(200, Math.floor(totalFiles / 5)));
+    }else{
+      suggestedChunk = Math.max(150, Math.min(250, Math.floor(totalFiles / 6)));
+    }
+
+    // Adjust for large average file size (reduce chunk size to avoid timeouts)
+    if(avgFileSize > 10 * 1024 * 1024){ // > 10MB average
+      suggestedChunk = Math.max(30, Math.floor(suggestedChunk * 0.6));
+    }else if(avgFileSize > 5 * 1024 * 1024){ // > 5MB average
+      suggestedChunk = Math.max(50, Math.floor(suggestedChunk * 0.75));
+    }
+
+    // Clamp to valid range
+    suggestedChunk = Math.max(10, Math.min(500, suggestedChunk));
+
+    chunkSizeEl.value = suggestedChunk;
+    const totalChunks = Math.ceil(totalFiles / suggestedChunk);
+    suggestionEl.textContent = `Suggested: ${suggestedChunk} files/chunk (${totalChunks} chunks)`;
   }
 
   async function uploadFolderChunked(){
@@ -1002,7 +1072,9 @@ APP_HTML = """
     }
 
     setProgress(true, 100, "Finalizing…");
-    await refreshTree();
+    // Expand the folder we uploaded to
+    const targetFolder = baseFolder || '';
+    await refreshTree([targetFolder]);
     setTimeout(()=>setProgress(false, 0, ""), 700);
 
     toast("Folder uploaded successfully.", true);
@@ -1027,7 +1099,10 @@ APP_HTML = """
     }
 
     toast(data.msg || "Created.", true);
-    await refreshTree();
+    // Expand the parent folder so user can see the new folder
+    const parentPath = p.includes('/') ? p.substring(0, p.lastIndexOf('/')) : '';
+    await refreshTree([parentPath]);
+    document.getElementById("mkdirPath").value = '';
   }
 
   async function rename(){
@@ -1067,11 +1142,14 @@ APP_HTML = """
 
     if(!r.ok){
       toast((data && data.msg) ? data.msg : ("Failed: HTTP " + r.status), false);
+      const parentPath = p.includes('/') ? p.substring(0, p.lastIndexOf('/')) : '';
+      await refreshTree([parentPath]);
       return;
     }
 
     toast(data.msg || "Deleted.", true);
-    await refreshTree();
+    const parentPath = p.includes('/') ? p.substring(0, p.lastIndexOf('/')) : '';
+    await refreshTree([parentPath]);
     if(storageDataCache) await refreshStorage();
   }
 
@@ -1089,21 +1167,27 @@ APP_HTML = """
 
     if(!r.ok){
       toast((data && data.msg) ? data.msg : ("Failed: HTTP " + r.status), false);
+      const parentPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+      await refreshTree([parentPath]);
       return;
     }
 
     toast(data.msg || "Deleted.", true);
-    await refreshTree();
+    const parentPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+    await refreshTree([parentPath]);
     if(storageDataCache) await refreshStorage();
   }
 
   function startRename(path){
     renamingPath = path;
-    refreshTree();
+    // Preserve expanded folders when starting rename
+    const parentPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+    refreshTree([parentPath]);
   }
 
   function cancelRename(){
     renamingPath = null;
+    // Preserve expanded folders when canceling
     refreshTree();
   }
 
@@ -1124,12 +1208,15 @@ APP_HTML = """
 
     if(!r.ok){
       toast((data && data.msg) ? data.msg : ("Failed: HTTP " + r.status), false);
-      await refreshTree();
+      const parentPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+      await refreshTree([parentPath]);
       return;
     }
 
     toast(data.msg || "Renamed.", true);
-    await refreshTree();
+    // Expand parent folder to show renamed item
+    const parentPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+    await refreshTree([parentPath]);
     if(storageDataCache) await refreshStorage();
   }
 
@@ -1566,11 +1653,28 @@ def api_mkdir():
         return jsonify({"ok": False, "msg": "Missing path."}), 400
 
     try:
-        os.makedirs(safe_join(rootp, p), exist_ok=True)
+        target_path = safe_join(rootp, p)
+        # Check if path already exists
+        if os.path.exists(target_path):
+            if os.path.isdir(target_path):
+                return jsonify({"ok": False, "msg": f"Folder already exists: {p}"}), 409
+            else:
+                return jsonify({"ok": False, "msg": f"A file with this name already exists: {p}"}), 409
+        
+        # Check if parent directory exists
+        parent_dir = os.path.dirname(target_path)
+        if not os.path.exists(parent_dir):
+            return jsonify({"ok": False, "msg": f"Parent folder does not exist: {os.path.dirname(p)}"}), 404
+        
+        os.makedirs(target_path, exist_ok=False)
     except ValueError:
         return jsonify({"ok": False, "msg": "Invalid path."}), 400
+    except FileExistsError:
+        return jsonify({"ok": False, "msg": f"Folder already exists: {p}"}), 409
+    except PermissionError:
+        return jsonify({"ok": False, "msg": "Permission denied. Cannot create folder."}), 403
     except Exception as e:
-        return jsonify({"ok": False, "msg": f"Failed: {e}"}), 500
+        return jsonify({"ok": False, "msg": f"Failed to create folder: {str(e)}"}), 500
 
     return jsonify({"ok": True, "msg": f"Folder created: {p}"})
 
@@ -1589,12 +1693,15 @@ def api_delete():
 
     try:
         abs_path = safe_join(rootp, p)
+        if not os.path.exists(abs_path):
+            return jsonify({"ok": False, "msg": f"File or folder not found: {p}"}), 404
+        
         if os.path.isdir(abs_path):
             shutil.rmtree(abs_path)
         elif os.path.isfile(abs_path):
             os.remove(abs_path)
         else:
-            return jsonify({"ok": False, "msg": "Not found."}), 404
+            return jsonify({"ok": False, "msg": f"Path exists but is neither a file nor folder: {p}"}), 400
     except ValueError:
         return jsonify({"ok": False, "msg": "Invalid path."}), 400
     except Exception as e:
@@ -1624,14 +1731,17 @@ def api_rename():
         base_new = new_name.replace("\\", "/").split("/")[-1].strip()
         safe_new = secure_filename(base_new) or base_new
         if not safe_new:
-            return jsonify({"ok": False, "msg": "Bad new name."}), 400
+            return jsonify({"ok": False, "msg": "Invalid new name. Name contains invalid characters."}), 400
+        if safe_new == os.path.basename(abs_path):
+            return jsonify({"ok": False, "msg": "New name is the same as the current name."}), 400
 
         new_abs = os.path.join(parent, safe_new)
 
         if not os.path.exists(abs_path):
-            return jsonify({"ok": False, "msg": "Not found."}), 404
+            return jsonify({"ok": False, "msg": f"File or folder not found: {p}"}), 404
         if os.path.exists(new_abs):
-            return jsonify({"ok": False, "msg": "Target already exists."}), 409
+            item_type = "folder" if os.path.isdir(new_abs) else "file"
+            return jsonify({"ok": False, "msg": f"A {item_type} with this name already exists: {safe_new}"}), 409
 
         os.rename(abs_path, new_abs)
     except ValueError:
