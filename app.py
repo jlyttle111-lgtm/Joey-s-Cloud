@@ -195,7 +195,7 @@ LOGIN_HTML = """
   .muted{position:relative;color:var(--muted);font-size:12px;line-height:1.4;margin-bottom:10px}
   label{display:block;font-size:13px;opacity:.92;margin-top:10px;position:relative}
   input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(13,20,36,.78);color:var(--text);outline:none;position:relative}
-  input:focus{border-color:rgba(122,167,255,.65);box-shadow:0 0 0 3px rgba(122,167,255,.10)}
+  input:focus{border-color:rgba(255,140,66,.65);box-shadow:0 0 0 3px rgba(255,140,66,.10)}
   .row{display:flex;gap:10px;margin-top:12px}
   .btn{flex:1;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(27,39,66,.85);color:var(--text);
     cursor:pointer;text-decoration:none;display:inline-flex;justify-content:center;align-items:center;transition:transform .12s ease, filter .12s ease, background .12s ease;}
@@ -240,7 +240,7 @@ REGISTER_HTML = """
   .muted{position:relative;color:var(--muted);font-size:12px;line-height:1.4;margin-bottom:10px}
   label{display:block;font-size:13px;opacity:.92;margin-top:10px;position:relative}
   input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(13,20,36,.78);color:var(--text);outline:none;position:relative}
-  input:focus{border-color:rgba(122,167,255,.65);box-shadow:0 0 0 3px rgba(122,167,255,.10)}
+  input:focus{border-color:rgba(255,140,66,.65);box-shadow:0 0 0 3px rgba(255,140,66,.10)}
   .row{display:flex;gap:10px;margin-top:12px}
   .btn{flex:1;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(27,39,66,.85);color:var(--text);
     cursor:pointer;text-decoration:none;display:inline-flex;justify-content:center;align-items:center;transition:transform .12s ease, filter .12s ease, background .12s ease;}
@@ -272,22 +272,22 @@ APP_HTML = """
 <title>__TITLE__</title>
 <style>
   :root{
-    --bg:#0b0f16;
-    --glass: rgba(20,27,42,.84);
-    --glass2: rgba(13,20,36,.70);
+    --bg:#0a0a0a;
+    --glass: rgba(30,20,15,.84);
+    --glass2: rgba(20,15,10,.70);
     --border: rgba(255,255,255,.10);
-    --text:#e8eefc;
-    --muted: rgba(232,238,252,.72);
-    --accent:#7aa7ff;
-    --danger:#ff7a7a;
+    --text:#f5e6d3;
+    --muted: rgba(245,230,211,.72);
+    --accent:#ff8c42;
+    --danger:#ff6b6b;
     --ok:#a8ffbf;
   }
   *{box-sizing:border-box}
   body{
     margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;color:var(--text);min-height:100vh;
     background:
-      radial-gradient(1000px 600px at 15% 15%, rgba(122,167,255,.18), transparent 60%),
-      radial-gradient(900px 600px at 85% 55%, rgba(255,122,214,.12), transparent 60%),
+      radial-gradient(1000px 600px at 15% 15%, rgba(255,140,66,.20), transparent 60%),
+      radial-gradient(900px 600px at 85% 55%, rgba(255,100,50,.15), transparent 60%),
       var(--bg);
   }
   .topbar{
@@ -312,7 +312,7 @@ APP_HTML = """
     transition:transform .12s ease, filter .12s ease, box-shadow .2s ease;
   }
   .tab:hover{transform:translateY(-1px);filter:brightness(1.08)}
-  .tab.active{border-color:rgba(122,167,255,.75);box-shadow:0 0 0 3px rgba(122,167,255,.10) inset}
+  .tab.active{border-color:rgba(255,140,66,.75);box-shadow:0 0 0 3px rgba(255,140,66,.10) inset}
 
   .btn{
     padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.10);
@@ -341,7 +341,7 @@ APP_HTML = """
   .card.stack:before{
     content:"";
     position:absolute;inset:-2px;
-    background:linear-gradient(135deg, rgba(122,167,255,.30), rgba(255,122,214,.16), transparent 60%);
+    background:linear-gradient(135deg, rgba(255,140,66,.35), rgba(255,100,50,.20), transparent 60%);
     filter:blur(18px);
     opacity:.75;
     pointer-events:none;
@@ -353,7 +353,7 @@ APP_HTML = """
     background:rgba(13,20,36,.72);color:var(--text);outline:none;
     transition:border-color .12s ease, box-shadow .12s ease;
   }
-  input:focus{border-color:rgba(122,167,255,.65);box-shadow:0 0 0 3px rgba(122,167,255,.10)}
+  input:focus{border-color:rgba(255,140,66,.65);box-shadow:0 0 0 3px rgba(255,140,66,.10)}
   .split{display:grid;gap:10px}
   @media(min-width:520px){ .split{grid-template-columns:1fr 1fr;} }
 
@@ -374,7 +374,7 @@ APP_HTML = """
     background:rgba(13,20,36,.45);margin:7px 0;
     transition:transform .10s ease, filter .10s ease, border-color .10s ease;
   }
-  .node:hover{transform:translateY(-1px);filter:brightness(1.08);border-color:rgba(122,167,255,.22)}
+  .node:hover{transform:translateY(-1px);filter:brightness(1.08);border-color:rgba(255,140,66,.22)}
   .indent{margin-left:14px}
   .click{cursor:pointer}
   .ok{color:var(--ok)}
@@ -386,11 +386,11 @@ APP_HTML = """
   }
   .folder-toggle{
     width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
-    border-radius:4px;background:rgba(122,167,255,.15);color:var(--accent);
+    border-radius:4px;background:rgba(255,140,66,.15);color:var(--accent);
     font-size:11px;transition:transform .15s ease, background .15s ease;
     flex-shrink:0;
   }
-  .folder-toggle:hover{background:rgba(122,167,255,.25)}
+  .folder-toggle:hover{background:rgba(255,140,66,.25)}
   .folder-toggle.collapsed{transform:rotate(-90deg)}
   .folder-children{
     margin-left:24px;margin-top:4px;overflow:hidden;
@@ -428,7 +428,7 @@ APP_HTML = """
     height:100%;
     width:0%;
     border-radius:999px;
-    background:linear-gradient(90deg, rgba(122,167,255,.85), rgba(255,122,214,.65));
+    background:linear-gradient(90deg, rgba(255,140,66,.85), rgba(255,100,50,.65));
     transition:width .18s ease;
   }
   .progRow{display:flex;justify-content:space-between;gap:10px;margin-top:8px;align-items:center}
@@ -473,13 +473,13 @@ APP_HTML = """
     cursor:pointer;display:flex;align-items:center;justify-content:center;
     font-size:12px;transition:all .12s ease;padding:0;
   }
-  .action-btn:hover{background:rgba(122,167,255,.25);transform:scale(1.1)}
+  .action-btn:hover{background:rgba(255,140,66,.25);transform:scale(1.1)}
   .action-btn.delete:hover{background:rgba(255,122,122,.35);color:#ff7a7a}
   .action-btn.rename:hover{background:rgba(168,255,191,.25);color:var(--ok)}
 
   /* Inline rename input */
   .rename-input{
-    background:rgba(13,20,36,.85);border:1px solid rgba(122,167,255,.50);
+    background:rgba(20,15,10,.85);border:1px solid rgba(255,140,66,.50);
     padding:4px 8px;border-radius:6px;font-size:13px;width:auto;min-width:120px;
     margin:0 4px;
   }
@@ -502,8 +502,8 @@ APP_HTML = """
     height:60px;border-radius:12px;border:2px solid rgba(255,255,255,.15);
     cursor:pointer;transition:all .15s ease;position:relative;
   }
-  .gradient-btn:hover{transform:translateY(-2px);border-color:rgba(122,167,255,.50);box-shadow:0 4px 12px rgba(0,0,0,.3)}
-  .gradient-btn.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(122,167,255,.20)}
+  .gradient-btn:hover{transform:translateY(-2px);border-color:rgba(255,140,66,.50);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .gradient-btn.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,140,66,.20)}
   .gradient-name{
     position:absolute;bottom:6px;left:8px;right:8px;font-size:11px;
     background:rgba(0,0,0,.5);padding:3px 6px;border-radius:6px;text-align:center;
@@ -606,28 +606,28 @@ APP_HTML = """
         <h3 style="margin-top:20px;font-size:14px;position:relative">Colors</h3>
         <div class="color-picker-row">
           <div class="color-picker-label">Background</div>
-          <input type="color" class="color-input" id="colorBg" value="#0b0f16" onchange="updateColor('bg', this.value)"/>
-          <input type="text" class="rename-input" id="colorBgText" value="#0b0f16" onchange="updateColor('bg', this.value)"/>
+          <input type="color" class="color-input" id="colorBg" value="#0a0a0a" onchange="updateColor('bg', this.value)"/>
+          <input type="text" class="rename-input" id="colorBgText" value="#0a0a0a" onchange="updateColor('bg', this.value)"/>
         </div>
         <div class="color-picker-row">
           <div class="color-picker-label">Glass/Card</div>
-          <input type="color" class="color-input" id="colorGlass" value="#141b2a" onchange="updateColor('glass', this.value)"/>
-          <input type="text" class="rename-input" id="colorGlassText" value="#141b2a" onchange="updateColor('glass', this.value)"/>
+          <input type="color" class="color-input" id="colorGlass" value="#1e140f" onchange="updateColor('glass', this.value)"/>
+          <input type="text" class="rename-input" id="colorGlassText" value="#1e140f" onchange="updateColor('glass', this.value)"/>
         </div>
         <div class="color-picker-row">
           <div class="color-picker-label">Text</div>
-          <input type="color" class="color-input" id="colorText" value="#e8eefc" onchange="updateColor('text', this.value)"/>
-          <input type="text" class="rename-input" id="colorTextText" value="#e8eefc" onchange="updateColor('text', this.value)"/>
+          <input type="color" class="color-input" id="colorText" value="#f5e6d3" onchange="updateColor('text', this.value)"/>
+          <input type="text" class="rename-input" id="colorTextText" value="#f5e6d3" onchange="updateColor('text', this.value)"/>
         </div>
         <div class="color-picker-row">
           <div class="color-picker-label">Accent</div>
-          <input type="color" class="color-input" id="colorAccent" value="#7aa7ff" onchange="updateColor('accent', this.value)"/>
-          <input type="text" class="rename-input" id="colorAccentText" value="#7aa7ff" onchange="updateColor('accent', this.value)"/>
+          <input type="color" class="color-input" id="colorAccent" value="#ff8c42" onchange="updateColor('accent', this.value)"/>
+          <input type="text" class="rename-input" id="colorAccentText" value="#ff8c42" onchange="updateColor('accent', this.value)"/>
         </div>
         <div class="color-picker-row">
           <div class="color-picker-label">Danger</div>
-          <input type="color" class="color-input" id="colorDanger" value="#ff7a7a" onchange="updateColor('danger', this.value)"/>
-          <input type="text" class="rename-input" id="colorDangerText" value="#ff7a7a" onchange="updateColor('danger', this.value)"/>
+          <input type="color" class="color-input" id="colorDanger" value="#ff6b6b" onchange="updateColor('danger', this.value)"/>
+          <input type="text" class="rename-input" id="colorDangerText" value="#ff6b6b" onchange="updateColor('danger', this.value)"/>
         </div>
 
         <h3 style="margin-top:24px;font-size:14px;position:relative">UI Gradients</h3>
@@ -827,11 +827,14 @@ APP_HTML = """
     if(r.status===401){ location.href="/login"; return; }
     const tree = await r.json();
     folderCounter = 0;
+    // Preserve expanded folders - don't clear the set, just re-render
     document.getElementById("fileTree").innerHTML = renderTree(tree);
   }
 
   let folderCounter = 0;
   let renamingPath = null;
+  let expandedFolders = new Set();
+
   function renderTree(node, depth=0){
     if(!node) return "";
     let html = "";
@@ -839,19 +842,21 @@ APP_HTML = """
       const label = node.path==="" ? "(root)" : node.name;
       const folderId = "f" + (folderCounter++);
       const hasChildren = node.children && node.children.length > 0;
-      const collapsedClass = hasChildren ? "" : "collapsed";
       const path = node.path || "";
+      const isExpanded = expandedFolders.has(path);
+      const collapsedClass = (hasChildren && !isExpanded) ? "collapsed" : "";
       const pathEscaped = path.replace(/'/g, "\\'");
       
       html += `<div class="node">
         <div class="node-wrapper">
-          <div class="folder-header" onclick="toggleFolder('${folderId}')" style="flex:1">
+          <div class="folder-header" onclick="event.stopPropagation(); toggleFolder('${folderId}', '${pathEscaped}')" style="flex:1;cursor:pointer">
             <span class="folder-toggle ${collapsedClass}" id="toggle_${folderId}">▼</span>
             <span class="badge">📁</span>
             ${renamingPath === path ? 
               `<input type="text" class="rename-input" value="${escapeHtml(label)}" 
-                onkeydown="if(event.key==='Enter') finishRename('${pathEscaped}', this.value); if(event.key==='Escape') cancelRename();"
-                onblur="finishRename('${pathEscaped}', this.value)" autofocus/>` :
+                onkeydown="event.stopPropagation(); if(event.key==='Enter') finishRename('${pathEscaped}', this.value); if(event.key==='Escape') cancelRename();"
+                onblur="finishRename('${pathEscaped}', this.value)" 
+                onclick="event.stopPropagation()" autofocus/>` :
               `<b>${escapeHtml(label)}</b>`
             }
             <span class="badge">${escapeHtml(path)}</span>
@@ -863,7 +868,7 @@ APP_HTML = """
         </div>`;
       
       if(hasChildren){
-        html += `<div class="folder-children" id="${folderId}">`;
+        html += `<div class="folder-children ${collapsedClass}" id="${folderId}">`;
         node.children.forEach(ch=>{ html += renderTree(ch, depth+1); });
         html += `</div>`;
       }
@@ -878,8 +883,9 @@ APP_HTML = """
             <span class="badge">📄</span>
             ${renamingPath === path ? 
               `<input type="text" class="rename-input" value="${escapeHtml(node.name)}" 
-                onkeydown="if(event.key==='Enter') finishRename('${pathEscaped}', this.value); if(event.key==='Escape') cancelRename();"
-                onblur="finishRename('${pathEscaped}', this.value)" autofocus/>` :
+                onkeydown="event.stopPropagation(); if(event.key==='Enter') finishRename('${pathEscaped}', this.value); if(event.key==='Escape') cancelRename();"
+                onblur="finishRename('${pathEscaped}', this.value)" 
+                onclick="event.stopPropagation()" autofocus/>` :
               `<span>${escapeHtml(node.name)}</span>`
             }
             <span class="badge"> • ${fmtBytes(node.size)}</span>
@@ -894,7 +900,7 @@ APP_HTML = """
     return html;
   }
 
-  function toggleFolder(folderId){
+  function toggleFolder(folderId, path){
     const children = document.getElementById(folderId);
     const toggle = document.getElementById("toggle_" + folderId);
     if(!children || !toggle) return;
@@ -903,9 +909,11 @@ APP_HTML = """
     if(isCollapsed){
       children.classList.remove("collapsed");
       toggle.classList.remove("collapsed");
+      if(path) expandedFolders.add(path);
     }else{
       children.classList.add("collapsed");
       toggle.classList.add("collapsed");
+      if(path) expandedFolders.delete(path);
     }
   }
 
@@ -1127,6 +1135,7 @@ APP_HTML = """
 
   // Customization functions
   const gradientPresets = [
+    {name: "Orange", colors: ["rgba(255,140,66,.20)", "rgba(255,100,50,.15)"]},
     {name: "Ocean", colors: ["rgba(122,167,255,.18)", "rgba(255,122,214,.12)"]},
     {name: "Sunset", colors: ["rgba(255,122,122,.20)", "rgba(255,200,100,.15)"]},
     {name: "Forest", colors: ["rgba(100,200,150,.18)", "rgba(150,255,200,.12)"]},
@@ -1230,11 +1239,11 @@ APP_HTML = """
 
   function saveCustomization(){
     const colors = {
-      bg: document.getElementById("colorBg")?.value || "#0b0f16",
-      glass: document.getElementById("colorGlass")?.value || "#141b2a",
-      text: document.getElementById("colorText")?.value || "#e8eefc",
-      accent: document.getElementById("colorAccent")?.value || "#7aa7ff",
-      danger: document.getElementById("colorDanger")?.value || "#ff7a7a"
+      bg: document.getElementById("colorBg")?.value || "#0a0a0a",
+      glass: document.getElementById("colorGlass")?.value || "#1e140f",
+      text: document.getElementById("colorText")?.value || "#f5e6d3",
+      accent: document.getElementById("colorAccent")?.value || "#ff8c42",
+      danger: document.getElementById("colorDanger")?.value || "#ff6b6b"
     };
 
     let gradientIndex = null;
